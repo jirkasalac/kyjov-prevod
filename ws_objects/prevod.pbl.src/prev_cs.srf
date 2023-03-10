@@ -1,0 +1,11 @@
+﻿$PBExportHeader$prev_cs.srf
+global type prev_cs from function_object
+end type
+
+forward prototypes
+global function string prev_cs (string zdr)
+end prototypes
+
+global function string prev_cs (string zdr);RETURN prcs ("L", "I", zdr)
+end function
+

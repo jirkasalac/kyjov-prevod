@@ -1,0 +1,96 @@
+﻿$PBExportHeader$prcs.srf
+global type prcs from function_object
+end type
+
+forward prototypes
+global function string prcs (character zdr, character cil, string ret)
+end prototypes
+
+global function string prcs (character zdr, character cil, string ret);//poradi v ramci ctveric 1.=Kamenik, 2.=LATIN2, 3.=ISO1250, 4.=ASCII, 5=Unicode
+/*znaky jsou následující: Č, ü, é, ď / ä, Ď, Ť, č, ě /
+*/
+integer pro[250]={128,172,200,67,268, 129,129,252,117,252, 130,130,233,101,233, 131,212,239,100,271,&
+	132,132,228,97,228, 133,210,207,68,270, 134,155,141,84,356, 135,159,232,99,269, 136,216,236,101,283,&
+	137,183,204,69,0, 138,145,229,76,0, 139,214,205,73,0, 140,150,190,108,0, 141,146,229,108,0,&
+	142,142,196,65,0, 143,181,193,65,0, 144,144,201,69,0, 145,167,158,122,0, 146,166,142,90,0,&
+	147,147,244,111,0, 148,148,246,111,0, 149,224,243,79,0, 150,133,249,117,0, 151,233,218,85,0,&
+	152,236,253,121,0, 153,153,214,79,0, 154,154,220,85,0, 155,230,138,83,0, 156,149,188,76,0,&
+	157,237,221,89,0, 158,252,216,82,0, 159,156,157,116,0, 160,160,225,97,0, 161,161,237,105,0,&
+	162,162,243,111,0, 163,163,250,117,0, 164,229,242,110,0, 165,213,210,78,0, 166,222,217,85,0,&
+	167,226,212,79,0, 168,231,154,115,353, 169,253,248,114,0, 170,234,224,114,0, 171,232,192,82,0,&
+	0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+integer pr[50,5]
+string ls_out = ""
+integer li_zdr=0, li_cil=0, li_len, li_i, li_c, li_j, li_k
+
+li_k = 1
+FOR li_i=1 TO 50
+	FOR li_j=1 TO 5
+		pr [li_i, li_j] = pro[li_k]
+		li_k++
+	NEXT
+NEXT
+
+CHOOSE CASE zdr
+	CASE "K"
+		li_zdr = 1
+	CHOOSE CASE cil
+		CASE "L"
+			li_cil = 2
+		CASE "I"
+			li_cil = 3
+		CASE "A"
+			li_cil = 4
+		CASE "U"
+			li_cil = 5
+	END CHOOSE
+
+	CASE "L"
+		li_zdr = 2
+	CHOOSE CASE cil
+		CASE "K"
+			li_cil = 1
+		CASE "I"
+			li_cil = 3
+		CASE "A"
+			li_cil = 4
+		CASE "U"
+			li_cil = 5
+	END CHOOSE
+
+	CASE "I"
+		li_zdr = 3
+	CHOOSE CASE cil
+		CASE "K"
+			li_cil = 1
+		CASE "L"
+			li_cil = 2
+		CASE "A"
+			li_cil = 4
+		CASE "U"
+			li_cil = 5
+	END CHOOSE
+END CHOOSE
+
+IF li_cil * li_zdr = 0 THEN
+	MessageBox ("Chyba", "Chybné parametry funkce PRCS !~n~n" + zdr + cil)
+ELSE
+	li_len = Len (ret)
+	FOR li_i=1 TO li_len
+		li_c = Asc ( MID (ret, li_i, 1))
+		IF li_c > 127 THEN
+			FOR li_j=1 TO 44
+				IF li_c = pr [li_j, li_zdr] THEN
+					ls_out += String (CHAR (pr [li_j, li_cil] ))
+//					messageBox (String (li_c), String (pr [li_j, li_cil] ))
+				END IF
+			NEXT
+		ELSE
+			ls_out += MID (ret, li_i, 1)
+		END IF
+	NEXT
+END IF
+
+RETURN ls_out
+end function
+

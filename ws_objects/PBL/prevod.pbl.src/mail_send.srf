@@ -1,0 +1,136 @@
+﻿$PBExportHeader$mail_send.srf
+global type mail_send from function_object
+end type
+
+forward prototypes
+global function boolean mail_send (string as_adresa, string as_subject, string as_body, string as_file)
+end prototypes
+
+global function boolean mail_send (string as_adresa, string as_subject, string as_body, string as_file);//odeslání mailu na pozadí
+mailSession  mSes
+mailReturnCode  mRet
+mailMessage  mMsg
+OLEObject ole_outlook, ole_item, ole_attach
+Integer li_i
+String ls_filename, ls_drive, ls_extension, ls_path, ls_a, ls_body
+Boolean lb_vr
+
+IF gnv_app.is_email_zpusob = "O" THEN
+	TRY
+		ole_outlook = Create OLEObject
+		//Connect to Outlook session using 'Outlook.Application'
+		li_i = ole_outlook.ConnectToNewObject("outlook.application")
+		//Check for the return code
+		If li_i <> 0 Then
+			Messagebox ("Chyba","Chyba připojení k Outlooku č." + String (li_i))
+			Destroy ole_outlook
+			RETURN FALSE
+		Else
+			ole_item = ole_outlook.CreateItem(0)
+			//Set the subject line of message
+			ole_item.Subject = as_subject
+			//Body of mail message
+			ole_item.Body = as_body + "~r~n~r~n" + gnv_app.is_patamail
+			//Recipient(s) Use a semicolon to separate multiple recipients
+			ls_path = gnv_app.inv_string.of_GlobalReplace (as_adresa, ",", ";")
+			IF POS (ls_path, ";") > 0 THEN
+				ls_a = gnv_app.inv_string.of_GetToken (ls_path, ";")
+				ole_item.To = ls_a
+				ole_item.CC = ls_path
+			ELSE
+				ole_item.To = as_adresa
+			END IF
+			IF LEN (as_file) > 0 THEN
+				IF FileExists (as_file) THEN
+					ole_attach = ole_item.Attachments
+					ole_attach.add (as_file)
+				ELSE
+					MessageBox ("Chyba", "Soubor '" + as_file + "' nebyl nalezen a proto není přiložen k emailu.", Exclamation!)
+				END IF
+			END IF
+			ole_item.Save 
+			ole_item.Display //displays the message
+			ole_item.Send //sends the message
+		End If
+		Destroy ole_outlook
+	CATCH (OLERuntimeError ole_1)
+		MessageBox ("Chyba", "Chyba komunikace s emailovým klientem.~r~n~r~nPopis chyby: " + ole_1.text + "~r~n~r~nEmail posílán na adresu: " + as_adresa, Exclamation!)
+	END TRY
+	lb_vr = TRUE
+ELSE
+	// Create a mail session
+	mSes = create mailSession
+	
+	// Log on to the session
+	mRet = mSes.mailLogon(mailNewSession!)
+	IF mRet <> mailReturnSuccess! THEN
+		RETURN FALSE
+	END IF
+	
+	// Populate the mailMessage structure
+	mMsg.Subject = as_subject
+	ls_body = as_body + "~r~n~r~n" + gnv_app.is_patamail
+	mMsg.NoteText = ls_body
+	ls_path = gnv_app.inv_string.of_GlobalReplace (as_adresa, ",", ";")
+	IF POS (ls_path, ";") > 0 THEN
+		li_i = 1
+		do while LEN (ls_path) > 0
+			ls_a = gnv_app.inv_string.of_GetToken (ls_path, ";")
+			mMsg.Recipient[li_i].name = ls_a
+			mMsg.Recipient[li_i].RecipientType = mailTo!
+			li_i ++
+		loop
+	ELSE
+		mMsg.Recipient[1].name = as_adresa
+		mMsg.Recipient[1].RecipientType = mailTo!
+	END IF
+	IF TRIM (as_file) <> "" THEN
+		IF FileExists (as_file) THEN
+			gnv_app.inv_filesrv.of_ParsePath (as_file, ls_drive, ls_path, ls_filename, ls_extension)
+			mMsg.AttachmentFile[1].FileType = mailAttach!
+			mMsg.AttachmentFile[1].FileName = ls_filename + "." + ls_extension
+			mMsg.AttachmentFile[1].PathName = as_file
+			mMsg.AttachmentFile[1].Position = -1
+		END IF
+	END IF
+	
+	// Send the mail
+	mRet = mSes.mailSend ( mMsg )
+	lb_vr = TRUE
+	CHOOSE CASE mRet
+	CASE mailReturnFailure!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnInsufficientMemory!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nNedostatek paměti.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnUserAbort!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nStorno uživatele.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnDiskFull!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nDisk je plný.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnTooManySessions!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nPříliš mnoho napojení.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnTooManyFiles!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nPříliš mnoho příloh.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnTooManyRecipients!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nPříliš mnoho adresátů.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnUnknownRecipient!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nChybný adresát.", Exclamation!)
+		lb_vr = FALSE
+	CASE mailReturnAttachmentNotFound!
+		MessageBox ("Pozor", "Mail pro '" + as_adresa + "' nebyl odeslán.~n~nPříloha nebyla nalezena.", Exclamation!)
+		lb_vr = FALSE
+	END CHOOSE
+	
+	mSes.mailLogoff()
+	DESTROY mSes
+END IF
+
+RETURN lb_vr
+end function
+

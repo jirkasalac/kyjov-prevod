@@ -1,0 +1,49 @@
+﻿$PBExportHeader$uf_zaloz_vykvys.srf
+global type uf_zaloz_vykvys from function_object
+end type
+
+forward prototypes
+global subroutine uf_zaloz_vykvys (long al_idvysetr, string as_druh, string as_kod, integer ai_pocet, integer ai_posun)
+end prototypes
+
+global subroutine uf_zaloz_vykvys (long al_idvysetr, string as_druh, string as_kod, integer ai_pocet, integer ai_posun);//založení výkonu nebo Dg
+Long ll_poc, ll_id
+String ls_text, ls_odb, ls_a, ls_data, ls_ind
+Integer li_i
+
+CHOOSE CASE as_druh
+CASE "V"
+	ls_ind = 'A'
+	SELECT COUNT (*), MAX (LEFT (naz, 40)), MAX (odb) INTO :ll_poc, :ls_text, :ls_odb FROM dbo.vykony WHERE kod = :as_kod;
+	SQLCA.of_Chyba (0, 100)
+CASE "G"
+	ls_ind = 'A'
+	ls_a = as_kod
+	li_i = LEN (ls_a)
+	SELECT COUNT (*), MAX (LEFT (naz, 40)) INTO :ll_poc, :ls_text FROM dbo.jdg WHERE LEFT (kod, :li_i) = :ls_a;
+	SQLCA.of_Chyba (0, 100)
+CASE "T", "M", "O"
+	ls_ind = 'N'
+	SELECT COUNT (*) INTO :ll_poc FROM dbo.tmkody WHERE kod = :as_kod;
+	SQLCA.of_Chyba (0, 100)
+END CHOOSE
+//dohledání v tabulkace textů výkonů
+SELECT COUNT (*), MAX (idvykvys_txt) INTO :ll_poc, :ll_id FROM dbo.vykvys_txt WHERE text = :ls_text;
+IF SQLCA.of_Chyba (0, 100) = 0 AND ll_poc > 0 THEN
+ELSE
+	INSERT INTO dbo.vykvys_txt (text) VALUES (:ls_text);
+	IF SQLCA.of_Chyba (0, 0) = 0 THEN
+		SQLCA.of_Commit ()
+		SELECT MAX (idvykvys_txt) INTO :ll_id FROM dbo.vykvys_txt WHERE text = :ls_text;
+		IF NOT (SQLCA.of_chyba (0, 100) = 0 AND ll_id > 0) THEN RETURN
+	END IF
+END IF
+INSERT INTO dbo.vykvys (idvysetr, druh, kod, pocet, ind, idvykvys_txt, posun)
+	VALUES (:al_idvysetr, :as_druh, :as_kod, :ai_pocet, :ls_ind, :ll_id, :ai_posun);
+IF SQLCA.of_Chyba (0, 0) = 0 THEN
+	SQLCA.of_Commit ()
+ELSE
+	SQLCA.of_Rollback ()
+END IF
+end subroutine
+

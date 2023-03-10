@@ -1,0 +1,80 @@
+﻿$PBExportHeader$uf_bezdia_male.srf
+global type uf_bezdia_male from function_object
+end type
+
+forward prototypes
+global function string uf_bezdia_male (string as_in)
+end prototypes
+
+global function string uf_bezdia_male (string as_in);integer li_i
+string ls_a, ls_out
+
+ls_out = ""
+FOR li_i=1 TO LEN (as_in)
+	ls_a = MID (as_in, li_i, 1)
+	CHOOSE CASE ls_a
+	CASE "Á", "À", "Â", "Ã", "Ä"
+		ls_out += "A"
+	CASE "á", "ä", "à", "â", "ã", "å"
+		ls_out += "a"
+	CASE "É", "Ě", "È", "Ê", "Ë"
+		ls_out += "E"
+	CASE "é", "ě", "è", "ê", "ë"
+		ls_out += "e"
+	CASE "Í" ,"Ì", "Î", "Ï"
+		ls_out += "I"
+	CASE "í", "ì", "í", "î", "ï"
+		ls_out += "i"
+	CASE "Ó", "Ô", "Ò", "Õ", "Ö"
+		ls_out += "O"
+	CASE "ó", "ő", "ö", "ô"
+		ls_out += "o"
+	CASE "Ú", "Ů", "Ü", "Ù", "Û"
+		ls_out += "U"
+	CASE "ú", "ů", "ű", "ü" ,"û"
+		ls_out += "u"
+	CASE "Ý"
+		ls_out += "Y"
+	CASE "ý"
+		ls_out += "y"
+	CASE "Š"
+		ls_out += "S"
+	CASE "š"
+		ls_out += "s"
+	CASE "Č"
+		ls_out += "C"
+	CASE "č"
+		ls_out += "c"
+	CASE "Ř", "Ŕ"
+		ls_out += "R"
+	CASE "ř", "ŕ"
+		ls_out += "r"
+	CASE "Ž"
+		ls_out += "Z"
+	CASE "ž"
+		ls_out += "z"
+	CASE "Ď"
+		ls_out += "D"
+	CASE "ď"
+		ls_out += "d"
+	CASE "Ť"
+		ls_out += "T"
+	CASE "ť"
+		ls_out += "t"
+	CASE "Ň"
+		ls_out += "N"
+	CASE "ň"
+		ls_out += "n"
+	CASE "Ĺ", "Ľ"
+		ls_out += "L"
+	CASE "ľ", "ľ"
+		ls_out += "l"
+	CASE ELSE
+		ls_out += ls_a
+	END CHOOSE
+NEXT
+
+RETURN ls_out
+
+end function
+
